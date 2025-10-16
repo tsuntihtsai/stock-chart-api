@@ -27,8 +27,20 @@ def get_kline_chart():
         
         if data.empty:
             return jsonify({'error': f"無法獲取 {symbol} 的數據。請檢查代碼或時間範圍。"}), 404
-
-        # --- 均線計算 ---
+        
+        # **【修正程式碼開始】**
+        # 確保 OHLCV 欄位都是 float 類型，這可以解決 'must be ALL float or int' 的錯誤
+        ohlc_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
+        for col in ohlc_cols:
+            # 使用 .astype(float) 強制轉換，errors='coerce' 會將無法轉換的值變為 NaN
+            data[col] = data[col].astype(float)
+        
+        # 清理包含 NaN 的行（通常 yfinance 已經清理過了，但這是額外的安全措施）
+        # 如果某一行 Open, High, Low, Close 都是 NaN，則將該行移除
+        data.dropna(subset=['Open', 'High', 'Low', 'Close'], inplace=True)
+        # **【修正程式碼結束】**
+        
+        # --- 均線計算 (保持不變) ---
         data['MA5'] = data['Close'].rolling(window=5).mean()
         data['MA20'] = data['Close'].rolling(window=20).mean()
 
