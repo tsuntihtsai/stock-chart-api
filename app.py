@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import ta
 import time # <-- 新增
 
+
 app = Flask(__name__)
 
 # ... (home 和 get_kline_chart 路由定義保持不變) ...
