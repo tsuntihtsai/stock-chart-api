@@ -23,23 +23,39 @@ def get_kline_chart():
         start_date = end_date - timedelta(days=90) # 抓取近 90 天數據
         
         # 使用 yfinance 獲取 OHLCV 數據
-        data = yf.download(symbol, start=start_date, end=end_date, interval='1d', progress=False)
+        # 【修正點 1】: 增加 multi_level_index=False 確保欄位是單層次的
+        data = yf.download(
+            symbol, 
+            start=start_date, 
+            end=end_date, 
+            interval='1d', 
+            progress=False,
+            multi_level_index=False # <-- 新增這行！
+        )
         
         if data.empty:
             return jsonify({'error': f"無法獲取 {symbol} 的數據。請檢查代碼或時間範圍。"}), 404
         
-        # **【修正程式碼開始】**
-        # 確保 OHLCV 欄位都是 float 類型，這可以解決 'must be ALL float or int' 的錯誤
+        # 【修正點 2】: 檢查並修復可能丟失的索引名稱
+        # 確保索引名稱存在，有助於數據處理
+        if data.index.name is None:
+            data.index.name = 'Date'
+        
+        
+        # 【修正點 3】: 清理不必要的欄位 (例如 'Adj Close')
+        # yfinance 抓取時會帶上 'Adj Close'，雖然不影響 mplfinance，但為了保險可以移除
+        if 'Adj Close' in data.columns:
+            data = data.drop(columns=['Adj Close'])
+        
+        
+        # --- 數據型態轉換 (保留上一次的修正，這很重要) ---
         ohlc_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
         for col in ohlc_cols:
-            # 使用 .astype(float) 強制轉換，errors='coerce' 會將無法轉換的值變為 NaN
+            # 確保所有 OHLCV 欄位都是 float 類型
             data[col] = data[col].astype(float)
         
-        # 清理包含 NaN 的行（通常 yfinance 已經清理過了，但這是額外的安全措施）
-        # 如果某一行 Open, High, Low, Close 都是 NaN，則將該行移除
-        data.dropna(subset=['Open', 'High', 'Low', 'Close'], inplace=True)
-        # **【修正程式碼結束】**
-        
+        # 清理 NaN
+        data.dropna(subset=['Open', 'High', 'Low', 'Close'], inplace=True)        
         # --- 均線計算 (保持不變) ---
         data['MA5'] = data['Close'].rolling(window=5).mean()
         data['MA20'] = data['Close'].rolling(window=20).mean()
