@@ -20,7 +20,7 @@ def get_kline_chart():
     try:
         # --- 數據獲取 ---
         end_date = datetime.now()
-        start_date = end_date - timedelta(days=90) # 抓取近 90 天數據
+        start_date = end_date - timedelta(days=120) # 抓取近 120 天數據
         
         # 使用 yfinance 獲取 OHLCV 數據
         # 【修正點 1】: 增加 multi_level_index=False 確保欄位是單層次的
