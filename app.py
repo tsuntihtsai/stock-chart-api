@@ -76,7 +76,7 @@ def get_kline_chart():
         
         # --- 數據獲取 ---
         end_date = datetime.now()
-        start_date = end_date - timedelta(days=180) # 抓取 6 個月數據
+        start_date = end_date - timedelta(days=90) # 抓取 6 個月數據
 
         # multi_level_index=False 解決欄位結構問題
         data = yf.download(
