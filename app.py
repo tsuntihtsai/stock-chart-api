@@ -6,6 +6,7 @@ import yfinance as yf
 from datetime import datetime, timedelta
 # 【新增】引入 ta 函式庫
 import ta
+import time # <-- 新增
 
 app = Flask(__name__)
 
@@ -17,12 +18,24 @@ def get_kline_chart():
     
     if not symbol:
         return jsonify({'error': 'Missing required parameter: symbol'}), 400
-
+    
     try:
-        # --- 數據獲取 (保持上次的修正) ---
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=180) # 為了有足夠數據計算指標，抓取 6 個月
-        
+            # 【新增延遲】: 讓服務暫停 2-5 秒，避免連續發送請求被鎖
+            # 這對 Agent 連續呼叫 Tool 時特別有用
+            time.sleep(3) 
+            
+            # --- 數據獲取 ---
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=180) 
+            
+            data = yf.download(
+                symbol, 
+                start=start_date, 
+                end=end_date, 
+                interval='1d', 
+                progress=False,
+                multi_level_index=False
+            )        
         data = yf.download(
             symbol, 
             start=start_date, 
