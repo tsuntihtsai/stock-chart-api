@@ -26,7 +26,7 @@ def get_kline_chart():
             
             # --- 數據獲取 ---
             end_date = datetime.now()
-            start_date = end_date - timedelta(days=180) 
+            start_date = end_date - timedelta(days=90) 
             
             data = yf.download(
                 symbol, 
