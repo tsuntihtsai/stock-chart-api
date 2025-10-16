@@ -3,3 +3,4 @@ pandas
 mplfinance
 yfinance
 waitress
+ta  # <-- 新增 Technical Analysis 函式庫
