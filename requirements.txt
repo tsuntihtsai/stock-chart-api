@@ -1,7 +1,6 @@
 Flask>=3.0.0
 pandas>=2.0.0
 mplfinance>=0.12.10b0
-yfinance>=0.2.38
 waitress>=3.0.0
 ta>=0.11.0
-curl_cffi>=0.6.0
+FinMind>=1.6.4
