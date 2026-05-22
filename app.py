@@ -5,37 +5,60 @@ import io
 from datetime import datetime, timedelta
 import ta
 import time
-from FinMind.data import DataLoader  # 【改用】FinMind 財經資料庫
+from FinMind.data import DataLoader
 
 app = Flask(__name__)
 api = DataLoader()
 
-# 如果你有註冊 FinMind 帳號（免費），可以在這裡填入 Token 提高存取額度
-# api.login_by_token(token="YOUR_FINMIND_TOKEN")
-
+# --- 修正後的資料準備函式 ---
 def prepare_data_fm(df):
-    """將 FinMind 的資料格式轉換為 mplfinance 相容格式"""
-    # FinMind 欄位對應轉換
-    df = df.rename(columns={
-        'date': 'Date',
+    """將 FinMind 的資料格式轉換為 mplfinance 相容格式，並自動相容不同版本的欄位名"""
+    
+    # 1. 先將所有欄位名稱轉為小寫，避免大小寫不一致的問題
+    df.columns = df.columns.str.lower()
+    
+    # 2. 定義 FinMind 可能出現的欄位對應（對應到大寫的 OHLCV）
+    mapping = {
         'open': 'Open',
         'max': 'High',
+        'high': 'High',  # 有些版本可能叫 high
         'min': 'Low',
+        'low': 'Low',    # 有些版本可能叫 low
         'close': 'Close',
-        'trading_volume': 'Volume'
-    })
+        'trading_volume': 'Volume',
+        'volume': 'Volume' # 如果原本就叫 volume
+    }
     
-    # 設定時間索引
-    df['Date'] = pd.to_datetime(df['Date'])
-    df.set_index('Date', inplace=True)
+    # 篩選出存在於目前 df 中的欄位進行更名
+    rename_dict = {k: v for k, v in mapping.items() if k in df.columns}
+    df = df.rename(columns=rename_dict)
     
-    # 確保資料型態為 float
-    ohlc_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
-    for col in ohlc_cols:
+    # 3. 處理日期索引
+    if 'date' in df.columns:
+        df['Date'] = pd.to_datetime(df['date'])
+        df.set_index('Date', inplace=True)
+    elif df.index.name and df.index.name.lower() == 'date':
+        df.index = pd.to_datetime(df.index)
+        df.index.name = 'Date'
+        
+    # 4. 確保必要的五個主欄位都存在，若不存在則拋出明確錯誤
+    required_cols = ['Open', 'High', 'Low', 'Close', 'Volume']
+    for col in required_cols:
+        if col not in df.columns:
+            # 如果真的缺少 Volume，補一個全為 0 的欄位避免繪圖崩潰
+            if col == 'Volume':
+                df['Volume'] = 0.0
+            else:
+                raise KeyError(f"資料中缺少必要的欄位: {col}")
+        
+        # 強制轉換型態為 float
         df[col] = pd.to_numeric(df[col], errors='coerce').astype(float)
         
+    # 移除 NaN 行
     df.dropna(subset=['Open', 'High', 'Low', 'Close'], inplace=True)
-    return df[['Open', 'High', 'Low', 'Close', 'Volume']]
+    
+    # 只回傳 mplfinance 需要的欄位
+    return df[required_cols]
 
 def calculate_indicators(data):
     data['MA5'] = data['Close'].rolling(window=5).mean()
@@ -64,7 +87,7 @@ def get_kline_chart():
     if not symbol:
         return jsonify({'error': 'Missing required parameter: symbol'}), 400
 
-    # 提取純數字（例如將 2330.TW 轉為 2330）
+    # 提取純數字
     stock_id = ''.join(filter(str.isdigit, symbol))
     if not stock_id:
         return jsonify({'error': '請輸入正確的台股代碼（例如 2330）'}), 400
@@ -87,7 +110,7 @@ def get_kline_chart():
         df = prepare_data_fm(df_raw)
         df = calculate_indicators(df)
 
-        # --- 繪圖設定 (與你原本的完全相同) ---
+        # --- 繪圖設定 ---
         add_plots = []
         add_plots.append(mpf.make_addplot(df['MA5'], color='blue', label='MA5', panel=0))
         add_plots.append(mpf.make_addplot(df['MA20'], color='red', label='MA20', panel=0))
@@ -108,7 +131,7 @@ def get_kline_chart():
         buffer = io.BytesIO()
         mpf.plot(
             df, type='candle', volume=True, addplot=add_plots, style='yahoo',
-            title=f'{stock_id} K-Line Chart (FinMind Data)',
+            title=f'{stock_id} K-Line Chart (FinMind Robust Version)',
             figratio=(16, 12), savefig=dict(fname=buffer, format='png', dpi=100)
         )
         buffer.seek(0)
