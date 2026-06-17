@@ -160,16 +160,22 @@ def get_kline_chart():
         add_plots.append(mpf.make_addplot(df['DMI+'], panel=3, color='lime', label='+DI'))
         add_plots.append(mpf.make_addplot(df['DMI-'], panel=3, color='red', label='-DI'))
         add_plots.append(mpf.make_addplot([20]*len(df), panel=3, color='gray', linestyle=':', alpha=0.5))
-
+        # --- 3. 調整 mpf.plot 的參數 ---
         buffer = io.BytesIO()
         mpf.plot(
-            df, type='candle', volume=True, addplot=add_plots, style='yahoo',
-            title=f'{stock_id} K-Line Chart (FinMind Robust Version)',
-            figratio=(16, 12), savefig=dict(fname=buffer, format='png', dpi=100)
+            df, 
+            type='candle', 
+            volume=True, 
+            addplot=add_plots, 
+            style=custom_style, # 🔴 修改：套用剛剛自訂的台股風格
+            title=f'{stock_id} K-Line Chart',
+            figratio=(16, 10),  # 調整成較扁的黃金比例，視覺上更像網頁看盤軟體
+            tight_layout=True,  # 自動縮減不必要的邊距，填滿畫面
+            savefig=dict(fname=buffer, format='png', dpi=120) # 提升 DPI 讓線條更清晰不模糊
         )
         buffer.seek(0)
         return send_file(buffer, mimetype='image/png', as_attachment=False)
-
+        
     except Exception as e:
         app.logger.error(f"處理 {symbol} 時發生錯誤: {e}")
         return jsonify({'error': "服務器內部錯誤或數據處理失敗。", 'details': str(e)}), 500
