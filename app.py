@@ -111,13 +111,46 @@ def get_kline_chart():
         df = calculate_indicators(df)
 
         # --- 繪圖設定 ---
+
+        # --- 1. 定義台股專屬顏色與風格（紅漲綠跌、黑色背景線） ---
+        mc = mpf.make_marketcolors(
+            up='red',          # 上漲為紅
+            down='green',      # 下跌為綠
+            edge='inherit',    # 蠟燭邊框跟隨主色
+            wick='inherit',    # 燭芯跟隨主色
+            volume='inherit',  # 量柱跟隨主色
+            inherit=True
+        )
+        
+        # 建立客製化面板風格（接近玩股網的淡灰色網格）
+        custom_style = mpf.make_mpf_style(
+            base_mpf_style='yahoo', 
+            marketcolors=mc,
+            gridcolor='#e0e0e0',  # 淺灰色網格線
+            gridstyle='-'         # 實線網格，看起來更俐落
+        )
+
+        # --- 2. 重新調整均線與指標圖層（加入細節優化） ---
         add_plots = []
-        add_plots.append(mpf.make_addplot(df['MA5'], color='blue', label='MA5', panel=0))
-        add_plots.append(mpf.make_addplot(df['MA20'], color='red', label='MA20', panel=0))
-        add_plots.append(mpf.make_addplot(df['K'], panel=1, color='purple', label='K', ylabel='Stochastics'))
-        add_plots.append(mpf.make_addplot(df['D'], panel=1, color='orange', label='D'))
-        add_plots.append(mpf.make_addplot([80]*len(df), panel=1, color='gray', linestyle=':', alpha=0.5))
-        add_plots.append(mpf.make_addplot([20]*len(df), panel=1, color='gray', linestyle=':', alpha=0.5))
+        # 主圖均線：調整線條粗細 (width) 讓它更絲滑，並補上玩股網有的 10MA 與 60MA
+        add_plots.append(mpf.make_addplot(df['MA5'], color='#1e90ff', width=1.2, label='MA5', panel=0))
+        # 如果你想跟附圖一樣有 10MA 或 60MA，可以自己在 calculate_indicators 算好後加在這裡：
+        # add_plots.append(mpf.make_addplot(df['MA10'], color='#orange', width=1.2, panel=0))
+        add_plots.append(mpf.make_addplot(df['MA20'], color='#ff69b4', width=1.5, label='MA20', panel=0)) 
+        
+        # 副圖指標 (保持你原本的 panel 配置，但可以微調線條以符合新風格)
+        add_plots.append(mpf.make_addplot(df['K'], panel=1, color='purple', width=1.0, label='K'))
+        add_plots.append(mpf.make_addplot(df['D'], panel=1, color='orange', width=1.0, label='D'))
+        add_plots.append(mpf.make_addplot([80]*len(df), panel=1, color='gray', linestyle=':', alpha=0.4))
+        add_plots.append(mpf.make_addplot([20]*len(df), panel=1, color='gray', linestyle=':', alpha=0.4))
+        
+        #add_plots = []
+        #add_plots.append(mpf.make_addplot(df['MA5'], color='blue', label='MA5', panel=0))
+        #add_plots.append(mpf.make_addplot(df['MA20'], color='red', label='MA20', panel=0))
+        #add_plots.append(mpf.make_addplot(df['K'], panel=1, color='purple', label='K', ylabel='Stochastics'))
+        #add_plots.append(mpf.make_addplot(df['D'], panel=1, color='orange', label='D'))
+        #add_plots.append(mpf.make_addplot([80]*len(df), panel=1, color='gray', linestyle=':', alpha=0.5))
+        #add_plots.append(mpf.make_addplot([20]*len(df), panel=1, color='gray', linestyle=':', alpha=0.5))
         add_plots.append(mpf.make_addplot(df['MACD'], panel=2, color='green', label='MACD', ylabel='MACD'))
         add_plots.append(mpf.make_addplot(df['Signal'], panel=2, color='red', label='Signal'))
         colors = ['red' if v >= 0 else 'green' for v in df['Hist']]
