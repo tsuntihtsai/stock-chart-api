@@ -137,10 +137,10 @@ def get_kline_chart():
         # --- 2. 重新調整均線與指標圖層（加入細節優化） ---
         add_plots = []
         # 主圖均線：調整線條粗細 (width) 讓它更絲滑，並補上玩股網有的 10MA 與 60MA
-        add_plots.append(mpf.make_addplot(df['MA5'], color='#1e90ff', width=1.2, label='MA5', panel=0))
+        add_plots.append(mpf.make_addplot(df['MA5'], color='blue', label='MA5', panel=0))
         # 如果你想跟附圖一樣有 10MA 或 60MA，可以自己在 calculate_indicators 算好後加在這裡：
         # add_plots.append(mpf.make_addplot(df['MA10'], color='#orange', width=1.2, panel=0))
-        add_plots.append(mpf.make_addplot(df['MA20'], color='#ff69b4', width=1.5, label='MA20', panel=0)) 
+        add_plots.append(mpf.make_addplot(df['MA20'], color='#ff69b4',  label='MA20', panel=0)) 
         
         # 副圖指標 (保持你原本的 panel 配置，但可以微調線條以符合新風格)
         add_plots.append(mpf.make_addplot(df['K'], panel=1, color='purple', width=1.0, label='K'))
