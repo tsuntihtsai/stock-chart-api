@@ -67,19 +67,33 @@ def calculate_indicators(data):
     stoch = ta.momentum.StochasticOscillator(
         high=data['High'], low=data['Low'], close=data['Close'], window=14, smooth_window=3
     )
-    data['K'] = stoch.stoch().dropna()
-    data['D'] = stoch.stoch_signal().dropna()
+    data['K'] = stoch.stoch()
+    data['D'] = stoch.stoch_signal()
     
     macd = ta.trend.MACD(data['Close'], window_fast=12, window_slow=26, window_sign=9)
-    data['MACD'] = macd.macd().dropna()
-    data['Signal'] = macd.macd_signal().dropna()
-    data['Hist'] = macd.macd_diff().dropna()
+    data['MACD'] = macd.macd()
+    data['Signal'] = macd.macd_signal()
+    data['Hist'] = macd.macd_diff()
 
     adx = ta.trend.ADX(data['High'], data['Low'], data['Close'], window=14)
-    data['ADX'] = adx.adx().dropna()
-    data['DMI+'] = adx.adx_pos().dropna()
-    data['DMI-'] = adx.adx_neg().dropna()
+    data['ADX'] = adx.adx()
+    data['DMI+'] = adx.adx_pos()
+    data['DMI-'] = adx.adx_neg()
+
+    # ==================== 🔴 這裡加入強力排毒 ====================
+    # 有些套件會把前面幾天的 K、D、MACD 自動補 0，我們強制把前 20 天的無效值全清空
+    import numpy as np
+    cols_to_clean = ['MA5', 'MA20', 'K', 'D', 'MACD', 'Signal', 'Hist', 'ADX', 'DMI+', 'DMI-']
+    for col in cols_to_clean:
+        if col in data.columns:
+            # 前 20 筆資料強制變為 NaN，這樣畫圖就不會往下衝到 0
+            data.iloc[:20, data.columns.get_loc(col)] = np.nan
+            
+    # 最後再切片剔除前 20 筆
+    data = data.iloc[20:]
+    # ============================================================
     return data
+
 
 @app.route('/api/kline', methods=['GET'])
 def get_kline_chart():
